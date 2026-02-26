@@ -21,6 +21,20 @@ os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
 from sampling import Scenario, TextSampler, BatchSampler, DatasetConfig, DatasetLoader, use_seed, derive_seed
 
 
+def _make_client_session(max_concurrent: int) -> aiohttp.ClientSession:
+    """Create a client session sized to drive high-concurrency benchmarks."""
+    # aiohttp defaults can bottleneck around ~100 live connections.
+    # Keep headroom above target concurrency for reconnects/retries.
+    target = max(128, max_concurrent)
+    conn_limit = max(512, target * 2)
+    connector = aiohttp.TCPConnector(
+        limit=conn_limit,
+        limit_per_host=conn_limit,
+        ttl_dns_cache=300,
+    )
+    return aiohttp.ClientSession(connector=connector)
+
+
 class LoRAConfig:
     """Configuration for LoRA distribution in benchmark."""
 
@@ -378,7 +392,7 @@ async def run_batch_async(user_requests: List[Dict], api_base: str, model: str, 
     
     start_time = time.time()
     
-    async with aiohttp.ClientSession() as session:
+    async with _make_client_session(max_concurrent) as session:
         tasks = []
         for request_data in user_requests:
             task = single_request(session, api_base, model, request_data, temperature, timeout, start_time, tokenizer)
@@ -405,7 +419,7 @@ async def run_refill_async(user_requests: List[Dict], api_base: str, model: str,
     # Keep at most max_concurrent in-flight; refill as workers complete.
     worker_count = min(max_concurrent, total_requests) if total_requests > 0 else 0
 
-    async with aiohttp.ClientSession() as session:
+    async with _make_client_session(max_concurrent) as session:
         async def worker_loop():
             while True:
                 try:
@@ -884,7 +898,7 @@ def warmup_server(api_base: str, model: str, temperature: float, timeout: int,
             tokenizer = text_sampler.tokenizer
             
             # Run single warmup request (simple, not multiprocessing)
-            async with aiohttp.ClientSession() as session:
+            async with _make_client_session(1) as session:
                 try:
                     await single_request(session, api_base, model, warmup_data, temperature, timeout, time.time(), tokenizer)
                 except Exception:
