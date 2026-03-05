@@ -17,10 +17,6 @@ TOKENOMICS_DIR="${REPO_ROOT}"
 
 RESULTS_DIR="${REPO_ROOT}/results"
 LOG_DIR="${REPO_ROOT}/repro_logs"
-VLLM_PROJECT="${VLLM_PROJECT:-${REPO_ROOT}/3rd_party/vllm}"
-VLLM_REPO="${VLLM_REPO:-${VLLM_PROJECT}}"
-EXPECTED_VLLM_COMMIT="${EXPECTED_VLLM_COMMIT:-4f2f6af9bb}"
-EXPECTED_TOKENOMICS_COMMIT="${EXPECTED_TOKENOMICS_COMMIT:-c8253180d8}"
 PORT="${PORT:-$((32000 + (SLURM_JOB_ID % 1000)))}"
 API_BASE="http://127.0.0.1:${PORT}/v1"
 
@@ -80,17 +76,6 @@ if [[ ! -f "${DATASET_CONFIG}" ]]; then
   exit 1
 fi
 
-if [[ ! -d "${VLLM_REPO}" ]]; then
-  echo "vLLM repo not found at ${VLLM_REPO}" >&2
-  exit 1
-fi
-
-ACTUAL_VLLM_COMMIT="$(git -C "${VLLM_REPO}" rev-parse --short=10 HEAD)"
-if [[ "${ACTUAL_VLLM_COMMIT}" != ${EXPECTED_VLLM_COMMIT}* ]]; then
-  echo "Unexpected vLLM commit: ${ACTUAL_VLLM_COMMIT} (expected prefix ${EXPECTED_VLLM_COMMIT})" >&2
-  exit 1
-fi
-
 if [[ -n "$(git -C "${TOKENOMICS_DIR}" status --porcelain)" ]]; then
   echo "Tokenomics checkout is dirty: ${TOKENOMICS_DIR}" >&2
   echo "Please clean the checkout before running reproducibility jobs." >&2
@@ -98,10 +83,6 @@ if [[ -n "$(git -C "${TOKENOMICS_DIR}" status --porcelain)" ]]; then
 fi
 
 ACTUAL_TOKENOMICS_COMMIT="$(git -C "${TOKENOMICS_DIR}" rev-parse --short=10 HEAD)"
-if [[ "${ACTUAL_TOKENOMICS_COMMIT}" != ${EXPECTED_TOKENOMICS_COMMIT}* ]]; then
-  echo "Unexpected tokenomics commit: ${ACTUAL_TOKENOMICS_COMMIT} (expected prefix ${EXPECTED_TOKENOMICS_COMMIT})" >&2
-  exit 1
-fi
 
 SERVER_PID=""
 cleanup_server() {
@@ -129,11 +110,6 @@ echo "MODEL_NAME=${MODEL_NAME}"
 echo "MODEL_ALIAS=${MODEL_ALIAS}"
 echo "RUN_TAG=${RUN_TAG}"
 echo "RESULTS_FILE=${RESULTS_FILE}"
-echo "VLLM_PROJECT=${VLLM_PROJECT}"
-echo "VLLM_REPO=${VLLM_REPO}"
-echo "EXPECTED_VLLM_COMMIT=${EXPECTED_VLLM_COMMIT}"
-echo "ACTUAL_VLLM_COMMIT=${ACTUAL_VLLM_COMMIT}"
-echo "EXPECTED_TOKENOMICS_COMMIT=${EXPECTED_TOKENOMICS_COMMIT}"
 echo "ACTUAL_TOKENOMICS_COMMIT=${ACTUAL_TOKENOMICS_COMMIT}"
 echo "API_BASE=${API_BASE}"
 echo "SCENARIO=${SCENARIO}"
@@ -156,7 +132,7 @@ echo "================================="
 
 echo "=== Serving ${MODEL_NAME} on ${API_BASE} ==="
 serve_cmd=(
-  uv run --project "${VLLM_PROJECT}" --no-sync --
+  uv run --no-sync --
   vllm serve "${MODEL_NAME}"
   --host 0.0.0.0
   --port "${PORT}"
@@ -194,7 +170,7 @@ fi
 
 echo "=== Benchmarking ${MODEL_NAME} ==="
 bench_cmd=(
-  uv run --project "${VLLM_PROJECT}" --no-sync --
+  uv run --no-sync --
   python "${TOKENOMICS_DIR}/completion_advanced_benchmark.py"
   --model "${MODEL_NAME}"
   --scenario "${SCENARIO}"
