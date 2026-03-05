@@ -1,0 +1,3 @@
+[submodule "3rd_party/vllm"]
+	path = 3rd_party/vllm
+	url = git@github.com:Liquid4All/vllm.git

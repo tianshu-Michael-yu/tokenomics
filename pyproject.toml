@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling>=1.24.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tokenomics"
+version = "0.1.0"
+description = "Tokenomics benchmarking utilities"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "datasets==3.2.0",
+  "openai",
+  "matplotlib",
+  "seaborn",
+  "aiohttp",
+  "fastapi",
+  "uvicorn",
+  "torch==2.10.*",
+  "transformers==5.1.0",
+  "vllm",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+vllm = { path = "3rd_party/vllm", editable = true }
+
+[tool.uv.extra-build-variables]
+vllm = { VLLM_USE_PRECOMPILED = "1", VLLM_PRECOMPILED_WHEEL_COMMIT = "f5972a872fa3fabd94b7a6c6f031f4b5bcee2b2d", VLLM_PRECOMPILED_WHEEL_VARIANT = "cu129", VLLM_VERSION_OVERRIDE = "0.16.0rc2.dev441+gf5972a872", VLLM_ROCM_WHEEL_INDEX = "https://pypi.amd.com/vllm-rocm/simple" }
