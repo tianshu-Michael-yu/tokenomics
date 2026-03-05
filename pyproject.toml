@@ -16,7 +16,7 @@ dependencies = [
   "aiohttp",
   "fastapi",
   "uvicorn",
-  "torch==2.10.*",
+  "torch==2.10.0+cu129",
   "transformers==5.1.0",
   "vllm",
 ]
@@ -25,7 +25,13 @@ dependencies = [
 package = false
 
 [tool.uv.sources]
+torch = { index = "pytorch-cu129" }
 vllm = { path = "3rd_party/vllm", editable = true }
 
 [tool.uv.extra-build-variables]
 vllm = { VLLM_USE_PRECOMPILED = "1", VLLM_PRECOMPILED_WHEEL_COMMIT = "f5972a872fa3fabd94b7a6c6f031f4b5bcee2b2d", VLLM_PRECOMPILED_WHEEL_VARIANT = "cu129", VLLM_VERSION_OVERRIDE = "0.16.0rc2.dev441+gf5972a872", VLLM_ROCM_WHEEL_INDEX = "https://pypi.amd.com/vllm-rocm/simple" }
+
+[[tool.uv.index]]
+name = "pytorch-cu129"
+url = "https://download.pytorch.org/whl/cu129"
+explicit = true
