@@ -1,4 +1,9 @@
 *.json
+slurm-repro-single-*.out
+slurm-repro-single-*.err
+repro_logs/
+results/
+repro_work/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
